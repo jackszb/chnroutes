@@ -62,40 +62,7 @@ jobs:
         run: curl -fsSL -o chnroutes-source.txt https://raw.githubusercontent.com/misakaio/chnroutes2/master/chnroutes.txt
 
       - name: Generate geoip-v4-cn.json and geoip-v4-cn.list
-        shell: python3 {0}
-        run: |
-          import ipaddress
-          import json
-
-          with open("chnroutes-source.txt") as f:
-              lines = f.readlines()
-
-          nets = []
-          for line in lines:
-              line = line.strip()
-              if not line or line.startswith("#"):
-                  continue
-              try:
-                  nets.append(ipaddress.ip_network(line, strict=False))
-              except ValueError:
-                  continue
-
-          # dedupe + aggregate + sort
-          collapsed = sorted(
-              ipaddress.collapse_addresses(set(nets)),
-              key=lambda n: (int(n.network_address), n.prefixlen),
-          )
-          cidrs = [str(n) for n in collapsed]
-
-          with open("geoip-v4-cn.json", "w", encoding="utf-8") as f:
-              json.dump({"version": 5, "rules": [{"ip_cidr": cidrs}]}, f, indent=2)
-              f.write("\n")
-
-          with open("geoip-v4-cn.list", "w", encoding="utf-8") as f:
-              for cidr in cidrs:
-                  f.write(f"IP-CIDR,{cidr},no-resolve\n")
-
-          print(f"Generated {len(cidrs)} aggregated CIDR entries")
+        run: python3 scripts/generate_geoip_v4_cn.py chnroutes-source.txt
 
       - name: Compile geoip-v4-cn.srs
         run: |
